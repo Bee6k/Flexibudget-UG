@@ -1,0 +1,49 @@
+name: Daily Commit Automation
+
+on:
+  schedule:
+    # Scheduled to run every day at 00:00 UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  daily-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Make daily changes
+        run: |
+          NOW=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          TODAY=$(date -u +"%Y-%m-%d")
+
+          if [ ! -f DAILY_ACTIVITY.md ]; then
+            echo "# Daily Activity Log" > DAILY_ACTIVITY.md
+            echo "" >> DAILY_ACTIVITY.md
+            echo "This document tracks automated daily commits and updates for the Flexibudget-UG repository." >> DAILY_ACTIVITY.md
+            echo "" >> DAILY_ACTIVITY.md
+            echo "## Update Records" >> DAILY_ACTIVITY.md
+            echo "" >> DAILY_ACTIVITY.md
+            echo "| Date (UTC) | Timestamp | Source | Details |" >> DAILY_ACTIVITY.md
+            echo "| ---------- | --------- | ------ | ------- |" >> DAILY_ACTIVITY.md
+          fi
+
+          echo "| $TODAY | $NOW | GitHub Actions | Daily Automated Commit |" >> DAILY_ACTIVITY.md
+
+      - name: Commit and Push
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add DAILY_ACTIVITY.md
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore(auto): daily repository update [$TODAY]"
+            git push origin main
+          fi
